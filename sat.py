@@ -1,39 +1,7 @@
 from pystream import Stream
 from typing import Iterable, NamedTuple
 
-
-class Var:
-    negation_symbol = "~"
-
-    def __init__(self, name: str, negated: bool) -> None:
-        self.name = name.lstrip("~")
-        self.negated = negated
-
-    def negate(self) -> "Var":
-        nvar = Var(self.name, self.negated)
-        nvar.negated = not self.negated
-        return nvar
-
-    def normal_form(self) -> "Var":
-        return Var(self.name, True)
-
-    def inverted_form(self) -> "Var":
-        return Var(self.name, False)
-
-    @staticmethod
-    def new(name):
-        return Var(name, True), Var(name, False)
-
-    def __eq__(self, __o: object) -> bool:
-        return __o and type(self) == type(__o) and self.name == __o.name and self.negated == __o.negated
-
-    def __hash__(self) -> int:
-        return hash((self.name, self.negated))
-
-    def __repr__(self) -> str:
-        return self.name if not self.negated else self.__class__.negation_symbol + self.name
-
-
+Var = int
 Clause = list[Var]
 Expression = list[Clause]
 
@@ -61,7 +29,7 @@ def unit_propagate(expr: Expression) -> UnitPropResult | None:
             .collect(set)
 
         for uvar in unit_vars:
-            if uvar.negate() in unit_vars:
+            if -uvar in unit_vars:
                 return None
 
         unit_var = Stream(unit_vars).first()
@@ -73,7 +41,7 @@ def unit_propagate(expr: Expression) -> UnitPropResult | None:
 
         expr = Stream(expr) \
             .filter(lambda clause: unit_var not in clause) \
-            .map(lambda clause: Stream(clause).filter(lambda var: var != unit_var.negate()).collect(list)) \
+            .map(lambda clause: Stream(clause).filter(lambda var: var != -unit_var).collect(list)) \
             .collect(list)
 
 
@@ -85,13 +53,13 @@ def condition_and_unit_propagate(variable: Var, expr: Expression) -> UnitPropRes
 def solve(expr: Expression) -> Iterable[list[Var]] | None:
     normal_variables = Stream(expr) \
         .flatten() \
-        .map(lambda v: v.normal_form()) \
+        .map(lambda v: abs(v)) \
         .distinct() \
         .collect(list)
 
     inverted_variables = Stream(expr) \
         .flatten() \
-        .map(lambda v: v.inverted_form()) \
+        .map(lambda v: -abs(v)) \
         .distinct() \
         .collect(list)
 
@@ -122,19 +90,14 @@ def _solve(expr: Expression, conditioned_vars: list[Var], var_choices: list[tupl
 
 
 def main():
-    x1, _x1 = Var.new("1")
-    x2, _x2 = Var.new("2")
-    x3, _x3 = Var.new("3")
-    x4, _x4 = Var.new("4")
-
     expr = [
-        [x1, x2],
-        [x1, _x2, _x3, x4],
-        [x1, _x3, _x4],
-        [_x1, x2, _x3],
-        [_x1, x2, _x4],
-        [_x1, x3, x4],
-        [_x2, x3]
+        [1, 2],
+        [1, -2, -3, 4],
+        [1, -3, -4],
+        [-1, 2, -3],
+        [-1, 2, -4],
+        [-1, 3, 4],
+        [-2, 3]
     ]
 
     res = solve(expr)
