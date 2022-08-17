@@ -50,7 +50,7 @@ def condition_and_unit_propagate(variable: Var, expr: Expression) -> UnitPropRes
     return unit_propagate(expr)
 
 
-def solve(expr: Expression) -> Iterable[list[Var]] | None:
+def solve(expr: Expression) -> list[Var] | None:
     normal_variables = Stream(expr) \
         .flatten() \
         .map(lambda v: abs(v)) \
@@ -66,7 +66,7 @@ def solve(expr: Expression) -> Iterable[list[Var]] | None:
     return _solve(expr, [], list(zip(normal_variables, inverted_variables)))
 
 
-def _solve(expr: Expression, conditioned_vars: list[Var], var_choices: list[tuple[Var, Var]]) -> Iterable[list[Var]] | None:
+def _solve(expr: Expression, conditioned_vars: list[Var], var_choices: list[tuple[Var, Var]]) -> list[Var] | None:
     if not expr:
         return conditioned_vars
 
@@ -83,7 +83,7 @@ def _solve(expr: Expression, conditioned_vars: list[Var], var_choices: list[tupl
         return _solve(new_expr, list(set(conditioned_vars + [v] + resolved_vars)), var_choices[1:])
 
     if _result:
-        resolved_vars, new_expr = result
+        resolved_vars, new_expr = _result
         return _solve(new_expr, list(set(conditioned_vars + [_v] + resolved_vars)), var_choices[1:])
 
     return None
